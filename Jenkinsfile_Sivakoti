@@ -1,0 +1,53 @@
+node{
+  
+  def MavenHome=tool name: "Maven_3.8.5"
+    
+    properties([authorizationMatrix(['USER:com.cloudbees.plugins.credentials.CredentialsProvider.Create:venki', 'USER:com.cloudbees.plugins.credentials.CredentialsProvider.Delete:venki', 'USER:com.cloudbees.plugins.credentials.CredentialsProvider.ManageDomains:venki', 'USER:com.cloudbees.plugins.credentials.CredentialsProvider.Update:venki', 'USER:com.cloudbees.plugins.credentials.CredentialsProvider.View:venki']), buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '4', numToKeepStr: '2')), pipelineTriggers([githubPush()])])
+    
+  
+    
+ stage ('checkoutcodefromgithub'){
+ 
+ git credentialsId: 'ccd261e7-b006-41e1-8a79-b1bf435864eb', url: 'https://github.com/sivakotirajuguduru/maven-web-application.git'
+   
+ } 
+  stage ( 'BuildArtifacts' ){ 
+    
+    sh "${MavenHome}/bin/mvn clean package"
+    
+  }
+ 
+ stage ('sonarqubereport'){
+     
+     sh "${MavenHome}/bin/mvn sonar:sonar"
+     
+ } 
+ 
+ stage ('deployartifacttonexus'){
+     
+     sh "${MavenHome}/bin/mvn clean deploy"
+ }
+ 
+ stage ('Deployartifacttotomcat'){
+     
+   sshagent(['ba93400d-8cbd-43b6-b06e-f260ef15ccff']) {
+     sh " scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.232.166.23:/opt/apache-tomcat-9.0.65/webapps/"   
+}  
+     
+ }
+ 
+ stage ( 'EmailNotification' ){
+     
+     emailext body: '''Hi team,
+
+pipeline build got success
+
+Regards,
+Devops team''', subject: 'pipeline build success', to: 'sivakotiraju@gmail.com'
+     
+    
+     
+     
+ }
+ 
+}
