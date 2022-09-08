@@ -1,4 +1,4 @@
-node ('.net') {
+node ('Java') {
   
   def MavenHome=tool name: "Maven_3.8.5"
     
